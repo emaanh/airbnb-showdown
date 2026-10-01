@@ -126,16 +126,23 @@
   function renderCard(id, side) {
     var l = BY_ID[id];
     var strip = el('div', { class: 'strip' });
-    l.photos.forEach(function (p, i) {
-      var img = el('img', { src: photoUrl(p, 480), alt: l.label + ', photo ' + (i + 1) + ' of ' + l.photos.length, loading: i < 4 ? 'eager' : 'lazy', decoding: 'async' });
-      strip.appendChild(el('button', { type: 'button', 'aria-label': 'Open photo ' + (i + 1), onclick: function () { openViewer(l, i); } }, [img]));
+    var SHOWN = 6;
+    var more = l.photos.length - SHOWN;
+    l.photos.slice(0, SHOWN).forEach(function (p, i) {
+      var img = el('img', { src: photoUrl(p, 480), alt: l.label + ', photo ' + (i + 1) + ' of ' + l.photos.length, decoding: 'async' });
+      var isLast = i === SHOWN - 1 && more > 0;
+      var tile = el('button', {
+        type: 'button',
+        'aria-label': isLast ? 'See all ' + l.photos.length + ' photos' : 'Open photo ' + (i + 1),
+        onclick: function () { openViewer(l, i); }
+      }, [img, isLast ? el('span', { class: 'more', text: '+' + more }) : null]);
+      strip.appendChild(tile);
     });
     var amen = el('ul', { class: 'amenities', 'aria-label': 'Highlights' });
     l.amenities.forEach(function (a) { amen.appendChild(el('li', { text: a })); });
 
     var card = el('article', { class: 'card', 'data-side': side }, [
       el('div', { class: 'photos' }, [strip, el('div', { class: 'photo-count', text: l.photos.length + ' photos' })]),
-      el('div', { class: 'swipe-hint', text: 'Swipe for more photos · tap to enlarge' }),
       el('div', { class: 'info' }, [
         el('div', { class: 'info-main' }, [
           el('div', { class: 'label', text: l.label }),
