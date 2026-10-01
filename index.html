@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Retreat Showdown</title>
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preconnect" href="https://a0.muscache.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&family=Instrument+Serif&display=swap">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<!-- Join -->
+<section id="screen-join" class="screen screen-narrow" hidden>
+  <div class="collage" id="collage"></div>
+  <div class="stack-10">
+    <div class="eyebrow">Oct 23 – 25 · <span id="place-count">24</span> places</div>
+    <h1 class="display">Help pick the retreat house</h1>
+    <p class="lede">You'll see two places at a time. Pick the one you'd rather stay at. <span id="min-count">36</span> matchups, about 5 minutes.</p>
+  </div>
+  <form id="join-form" class="join-form">
+    <label for="voter-name">Your name</label>
+    <input id="voter-name" name="voter-name" type="text" autocomplete="given-name" placeholder="First name" required maxlength="40">
+    <button type="submit" class="btn btn-primary" id="join-btn">Start</button>
+    <p class="hint" id="join-hint" hidden></p>
+  </form>
+</section>
+
+<!-- Matchup -->
+<section id="screen-match" class="screen" hidden>
+  <header class="topbar">
+    <div class="topbar-row">
+      <div class="eyebrow" id="progress-label">Matchup 1 of 36</div>
+      <button type="button" class="btn-text" id="undo-btn" disabled>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14L4 9l5-5"></path><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"></path></svg>
+        Undo
+      </button>
+    </div>
+    <div class="bar"><div class="bar-fill" id="bar-fill"></div></div>
+  </header>
+  <h1 class="display question">Which would you rather stay at?</h1>
+  <div class="cards" id="cards"></div>
+</section>
+
+<!-- Minimum done -->
+<section id="screen-milestone" class="screen screen-narrow" hidden>
+  <div class="milestone">
+    <div class="check" aria-hidden="true"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"></path></svg></div>
+    <h1 class="display">That's the minimum. Thank you!</h1>
+    <p class="lede">Your picks are saved. Every extra matchup makes the final ranking more accurate, so keep going if you have a few more minutes.</p>
+  </div>
+  <div class="stack-10">
+    <button type="button" class="btn btn-primary" id="keep-going-btn">Keep going</button>
+    <button type="button" class="btn btn-outline" id="im-done-btn">I'm done</button>
+  </div>
+</section>
+
+<!-- Finished -->
+<section id="screen-done" class="screen screen-narrow" hidden>
+  <div class="milestone">
+    <h1 class="display">All set, <span id="done-name"></span></h1>
+    <p class="lede" id="done-summary"></p>
+    <p class="lede">You can close this tab. Come back to this link any time to add more.</p>
+  </div>
+  <button type="button" class="btn btn-outline" id="more-btn">Do a few more</button>
+</section>
+
+<!-- Photo viewer -->
+<div class="viewer" id="viewer" hidden role="dialog" aria-modal="true" aria-label="Photos">
+  <div class="viewer-top">
+    <button type="button" class="viewer-btn" id="viewer-close" aria-label="Close photos">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"></path></svg>
+    </button>
+    <div class="viewer-count" id="viewer-count"></div>
+    <span class="viewer-spacer"></span>
+  </div>
+  <div class="viewer-stage">
+    <button type="button" class="viewer-btn viewer-nav" id="viewer-prev" aria-label="Previous photo">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"></path></svg>
+    </button>
+    <img id="viewer-img" alt="">
+    <button type="button" class="viewer-btn viewer-nav" id="viewer-next" aria-label="Next photo">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"></path></svg>
+    </button>
+  </div>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+
+<script src="config.js"></script>
+<script src="data.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
