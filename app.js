@@ -1,7 +1,9 @@
 (function () {
   'use strict';
 
-  var MIN = (window.CONFIG && window.CONFIG.MIN_MATCHUPS) || 36;
+  var MIN = (window.CONFIG && window.CONFIG.MIN_MATCHUPS) || 24;
+  var BONUS = (window.CONFIG && window.CONFIG.BONUS_MATCHUPS) || 12;
+  var MAX = MIN + BONUS;
   var API = (window.CONFIG && window.CONFIG.APPS_SCRIPT_URL) || '';
   var IMG = 'https://a0.muscache.com/im/pictures/';
   var LISTINGS = window.LISTINGS || [];
@@ -189,11 +191,11 @@
 
   function renderMatch() {
     var done = state.history.length;
-    var extra = done - MIN;
-    $('progress-label').textContent = extra >= 0
-      ? 'Minimum done · +' + extra + ' extra'
+    var inBonus = done >= MIN;
+    $('progress-label').textContent = inBonus
+      ? 'Bonus round · ' + (done - MIN + 1) + ' of ' + BONUS
       : 'Matchup ' + (done + 1) + ' of ' + MIN;
-    $('bar-fill').style.width = Math.min(100, done / MIN * 100) + '%';
+    $('bar-fill').style.width = (inBonus ? Math.min(100, (done - MIN) / BONUS * 100) : Math.min(100, done / MIN * 100)) + '%';
     $('undo-btn').disabled = done === 0;
     var cards = $('cards');
     cards.classList.remove('is-busy');
@@ -241,6 +243,8 @@
         state.milestoneShown = true;
         save('rs.milestone.' + state.voter.toLowerCase(), true);
         show('milestone');
+      } else if (state.history.length >= MAX) {
+        finish();
       } else {
         goToNext();
       }
@@ -286,6 +290,7 @@
       $('join-btn').disabled = false;
       $('join-btn').textContent = 'Start';
       if (state.history.length >= MIN) state.milestoneShown = true;
+      if (state.history.length >= MAX) { finish(); return; }
       var saved = load('rs.current.' + key, null);
       if (saved && BY_ID[saved.left] && BY_ID[saved.right] && !state.history.some(function (h) { return pairKey(h.left, h.right) === pairKey(saved.left, saved.right); })) {
         state.current = saved;
@@ -299,8 +304,13 @@
 
   function finish() {
     $('done-name').textContent = state.voter;
-    var n = state.history.length;
-    $('done-summary').textContent = 'You made ' + n + ' pick' + (n === 1 ? '' : 's') + '. Thanks for helping choose.';
+    var n = state.history.length, left = Math.max(0, MAX - n);
+    $('done-summary').textContent = left === 0
+      ? 'You made all ' + n + ' picks, bonus round included. Thank you!'
+      : 'You made ' + n + ' pick' + (n === 1 ? '' : 's') + '. Thanks for helping choose.';
+    $('done-note').textContent = left === 0 ? 'You can close this tab.' : 'You can close this tab, or come back to this link any time to do the bonus picks.';
+    $('more-btn').hidden = left === 0;
+    $('more-btn').textContent = 'Do the bonus picks (' + left + ' left)';
     show('done');
   }
 
@@ -404,13 +414,16 @@
     if (name) start(name);
   });
   $('undo-btn').addEventListener('click', undo);
-  $('keep-going-btn').addEventListener('click', goToNext);
+  function continueBonus() { if (state.history.length >= MAX) finish(); else goToNext(); }
+  $('keep-going-btn').addEventListener('click', continueBonus);
   $('im-done-btn').addEventListener('click', finish);
-  $('more-btn').addEventListener('click', goToNext);
+  $('more-btn').addEventListener('click', continueBonus);
 
   // Join screen
   $('place-count').textContent = LISTINGS.length;
   $('min-count').textContent = MIN;
+  $('bonus-count').textContent = BONUS;
+  $('keep-going-btn').textContent = 'Do ' + BONUS + ' bonus picks';
   var picks = shuffle(LISTINGS.slice()).slice(0, 5);
   picks.forEach(function (l) {
     $('collage').appendChild(el('img', { src: photoUrl(l.photos[0], 720), alt: l.label }));
