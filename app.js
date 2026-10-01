@@ -23,6 +23,9 @@
     voter: load('rs.voter', ''),
     history: [],          // [{vote_id, left, right, winner}]
     current: null,        // {left, right}
+    group: null,          // everyone's votes [{w, l}] from the sheet, null until loaded
+    groupLocal: [],       // this device's votes since the last group refresh
+    groupLoading: false,
     milestoneShown: false,
     busy: false
   };
@@ -80,7 +83,36 @@
     for (var i = arr.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)); var t = arr[i]; arr[i] = arr[j]; arr[j] = t; }
     return arr;
   }
+  // ---- group votes (winner/loser ids only), used to focus matchups on the top-5 cut ----
+  var WARMUP = 8, TOP_K = 5;
+  function refreshGroup() {
+    if (!API || state.groupLoading) return;
+    state.groupLoading = true;
+    var url = API + (API.indexOf('?') > -1 ? '&' : '?') + 'all=1';
+    fetch(url).then(function (r) { return r.json(); }).then(function (d) {
+      if (d && d.ok && d.all) { state.group = d.votes || []; state.groupLocal = []; }
+    }).catch(function () { /* keep what we have; balanced mode still works */ })
+      .then(function () { state.groupLoading = false; });
+  }
+  function groupVotes() { return (state.group || []).concat(state.groupLocal); }
+
   function nextPair() {
+    if (state.history.length >= WARMUP && state.group && window.Ranker) {
+      try {
+        var ids = LISTINGS.map(function (l) { return l.id; });
+        var model = Ranker.fit(ids, groupVotes());
+        var P = Ranker.topKProb(model, TOP_K, 300);
+        var seenByMe = {};
+        state.history.forEach(function (h) { seenByMe[pairKey(h.left, h.right)] = 1; });
+        var prev = state.history[state.history.length - 1];
+        var c = Ranker.choosePair(model, P, seenByMe, prev ? pairKey(prev.left, prev.right) : '');
+        if (c) return Math.random() < 0.5 ? { left: c.a, right: c.b } : { left: c.b, right: c.a };
+      } catch (e) { /* fall through to balanced */ }
+    }
+    return balancedPair();
+  }
+
+  function balancedPair() {
     var seen = {}, pairs = {};
     LISTINGS.forEach(function (l) { seen[l.id] = 0; });
     state.history.forEach(function (h) {
@@ -191,6 +223,8 @@
     var vote = { vote_id: uuid(), left: c.left, right: c.right, winner: winner };
     state.history.push(vote);
     save(histKey(), state.history);
+    state.groupLocal.push({ w: winner, l: loser });
+    if (state.history.length % 4 === 0) refreshGroup();
     send({
       action: 'vote', vote_id: vote.vote_id, voter: state.voter,
       left_id: c.left, left_label: BY_ID[c.left].label,
@@ -217,6 +251,14 @@
     if (state.busy || !state.history.length) return;
     var last = state.history.pop();
     save(histKey(), state.history);
+    var lastLoser = last.winner === last.left ? last.right : last.left;
+    var drop = function (arr) {
+      for (var k = arr.length - 1; k >= 0; k--) {
+        if (arr[k].w === last.winner && arr[k].l === lastLoser) { arr.splice(k, 1); return true; }
+      }
+      return false;
+    };
+    if (!drop(state.groupLocal) && state.group) drop(state.group);
     send({ action: 'undo', vote_id: last.vote_id, voter: state.voter });
     state.current = { left: last.left, right: last.right };
     renderMatch();
@@ -232,6 +274,7 @@
     state.history = load(histKey(), []);
     $('join-btn').disabled = true;
     $('join-btn').textContent = 'Loading…';
+    refreshGroup();
     // Pending local votes not yet sent are kept; server history wins otherwise.
     fetchHistory(state.voter).then(function (votes) {
       var pendingIds = {};

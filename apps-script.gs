@@ -63,11 +63,22 @@ function doPost(e) {
   }
 }
 
-// Returns one voter's past picks so they can continue on another device.
+// ?voter=name returns one voter's past picks so they can continue on another device.
+// ?all=1 returns every vote as winner/loser ids only (no names), used to focus matchups.
 function doGet(e) {
-  var voter = String((e.parameter && e.parameter.voter) || '').trim().toLowerCase();
+  var p = (e && e.parameter) || {};
   var sh = votesSheet_();
   var last = sh.getLastRow();
+  if (p.all) {
+    var all = [];
+    if (last >= 2) {
+      sh.getRange(2, 1, last - 1, HEADERS.length).getDisplayValues().forEach(function (r) {
+        if (r[7] && r[9]) all.push({ w: r[7], l: r[9] });
+      });
+    }
+    return json_({ ok: true, all: true, votes: all });
+  }
+  var voter = String(p.voter || '').trim().toLowerCase();
   var votes = [];
   if (voter && last >= 2) {
     var rows = sh.getRange(2, 1, last - 1, HEADERS.length).getDisplayValues();
