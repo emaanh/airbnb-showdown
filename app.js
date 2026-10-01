@@ -127,15 +127,14 @@
     var l = BY_ID[id];
     var strip = el('div', { class: 'strip' });
     var SHOWN = 6;
-    var more = l.photos.length - SHOWN;
     l.photos.slice(0, SHOWN).forEach(function (p, i) {
       var img = el('img', { src: photoUrl(p, 480), alt: l.label + ', photo ' + (i + 1) + ' of ' + l.photos.length, decoding: 'async' });
-      var isLast = i === SHOWN - 1 && more > 0;
+      var cue = el('span', { class: 'hover-cue', 'aria-hidden': 'true', text: 'View all ' + l.photos.length + ' photos' });
       var tile = el('button', {
         type: 'button',
-        'aria-label': isLast ? 'See all ' + l.photos.length + ' photos' : 'Open photo ' + (i + 1),
-        onclick: function () { openViewer(l, i); }
-      }, [img, isLast ? el('span', { class: 'more', text: '+' + more }) : null]);
+        'aria-label': 'View all ' + l.photos.length + ' photos',
+        onclick: function () { openGallery(l, i, card); }
+      }, [img, cue]);
       strip.appendChild(tile);
     });
     var amen = el('ul', { class: 'amenities', 'aria-label': 'Highlights' });
@@ -262,7 +261,48 @@
     show('done');
   }
 
-  // ---- photo viewer ----
+  // ---- gallery: every photo, Pinterest-style ----
+  var gallery = { listing: null, card: null, lastFocus: null };
+  function openGallery(listing, startIndex, cardEl) {
+    gallery.listing = listing; gallery.card = cardEl; gallery.lastFocus = document.activeElement;
+    $('gallery-title').textContent = listing.label;
+    $('gallery-where').textContent = listing.city + ' · ' + listing.drive + ' from USC · ' + listing.photos.length + ' photos';
+    $('gallery-link').href = listing.url;
+    var m = $('masonry');
+    m.innerHTML = '';
+    var tiles = listing.photos.map(function (p, i) {
+      var img = el('img', { alt: listing.label + ', photo ' + (i + 1), loading: Math.abs(i - startIndex) < 8 ? 'eager' : 'lazy', decoding: 'async' });
+      img.addEventListener('load', function () { img.classList.add('is-loaded'); });
+      img.src = photoUrl(p, 720);
+      var tile = el('button', { type: 'button', 'aria-label': 'Enlarge photo ' + (i + 1), onclick: function () { openViewer(listing, i); } }, [img]);
+      m.appendChild(tile);
+      return tile;
+    });
+    $('gallery').hidden = false;
+    $('gallery').scrollTop = 0;
+    document.body.style.overflow = 'hidden';
+    if (startIndex > 0 && tiles[startIndex]) {
+      requestAnimationFrame(function () { tiles[startIndex].scrollIntoView({ block: 'center' }); });
+    }
+    $('gallery-close').focus();
+  }
+  function closeGallery() {
+    $('gallery').hidden = true;
+    $('masonry').innerHTML = '';
+    document.body.style.overflow = '';
+    if (gallery.lastFocus) gallery.lastFocus.focus();
+  }
+  $('gallery-close').addEventListener('click', closeGallery);
+  $('gallery-pick').addEventListener('click', function () {
+    var l = gallery.listing, card = gallery.card;
+    closeGallery();
+    if (l && card && card.isConnected) pick(l.id, card);
+  });
+  $('gallery').addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && $('viewer').hidden) closeGallery();
+  });
+
+  // ---- photo viewer (one photo, large) ----
   var viewer = { listing: null, index: 0, lastFocus: null };
   function openViewer(listing, index) {
     viewer.listing = listing; viewer.index = index; viewer.lastFocus = document.activeElement;
@@ -285,7 +325,7 @@
   }
   function closeViewer() {
     $('viewer').hidden = true;
-    document.body.style.overflow = '';
+    if ($('gallery').hidden) document.body.style.overflow = '';
     if (viewer.lastFocus) viewer.lastFocus.focus();
   }
   $('viewer-close').addEventListener('click', closeViewer);

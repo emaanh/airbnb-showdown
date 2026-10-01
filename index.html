@@ -68,6 +68,24 @@
   <button type="button" class="btn btn-outline" id="more-btn">Do a few more</button>
 </section>
 
+<!-- Photo gallery (masonry) -->
+<div class="gallery" id="gallery" hidden role="dialog" aria-modal="true" aria-labelledby="gallery-title">
+  <header class="gallery-head">
+    <button type="button" class="icon-btn" id="gallery-close" aria-label="Back to matchup">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"></path></svg>
+    </button>
+    <div class="gallery-title-wrap">
+      <div class="gallery-title" id="gallery-title"></div>
+      <div class="where" id="gallery-where"></div>
+    </div>
+    <a class="airbnb-link" id="gallery-link" target="_blank" rel="noopener">Airbnb ↗</a>
+  </header>
+  <div class="masonry" id="masonry"></div>
+  <div class="gallery-foot">
+    <button type="button" class="btn btn-primary" id="gallery-pick">Pick this one</button>
+  </div>
+</div>
+
 <!-- Photo viewer -->
 <div class="viewer" id="viewer" hidden role="dialog" aria-modal="true" aria-label="Photos">
   <div class="viewer-top">
